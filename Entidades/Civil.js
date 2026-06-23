@@ -22,8 +22,9 @@ class Civil extends Phaser.Physics.Matter.Sprite {
     if (this._cooldownEmpujon || this.fueSalvado) return;
 
     const dx = this.x - bombero.x;
-    const dir = Math.sign(dx) || 1;
-    this.applyForce({ x: 0.02 * dir, y: -0.005 });
+    const dy = this.y - bombero.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    this.applyForce({ x: 0.02 * (dx / len), y: 0.02 * (dy / len) });
     this.fueEmpujado = true;
 
     if (this.estaEnPeligro) {

@@ -5,19 +5,20 @@ class Level2Scene extends LevelBase {
 
   create() {
     super.create({
-      bgColor: '#34495e',
+      bgColor: 0x2c3e50,
       playerX: 50,
-      playerY: 500,
-      plataformas: [
-        { x: 400, y: 568, w: 800, h: 64, color: 0x555555, label: 'ground' },
-        { x: 180, y: 460, w: 240, h: 20, color: 0x666666 },
-        { x: 640, y: 450, w: 200, h: 20, color: 0x666666 },
-        { x: 260, y: 350, w: 260, h: 20, color: 0x777777 },
-        { x: 620, y: 270, w: 200, h: 20, color: 0x777777 }
+      playerY: 550,
+      obstaculos: [
+        { x: 200, y: 450, w: 50, h: 50, color: 0x777799 },
+        { x: 550, y: 400, w: 40, h: 60, color: 0x777799 },
+        { x: 300, y: 250, w: 60, h: 40, color: 0x8888aa },
+        { x: 500, y: 150, w: 50, h: 50, color: 0x8888aa },
       ],
       civiles: [
-        { x: 180, y: 440 }, { x: 640, y: 430 },
-        { x: 260, y: 330 }, { x: 620, y: 250 }
+        { x: 200, y: 400 },
+        { x: 550, y: 350 },
+        { x: 300, y: 200 },
+        { x: 500, y: 100 },
       ],
       spawnInterval: 3500,
       npcsRequeridos: 3,
