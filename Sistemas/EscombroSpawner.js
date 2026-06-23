@@ -1,10 +1,8 @@
 class EscombroSpawner {
   static get WARNING_DURACION() { return 3000; }
 
-  static lanzarEscombro(scene, civil) {
+  static lanzarEscombro(scene, civil, warningDuration = this.WARNING_DURACION) {
     if (!civil || !civil.body || civil.fueSalvado) return;
-
-    const warningDuration = this.WARNING_DURACION;
 
     civil.estaEnPeligro = true;
     civil.setTint(0xff6666);

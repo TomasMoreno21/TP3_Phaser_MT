@@ -36,7 +36,7 @@ class TiledMapLoader {
   }
 
   static _parseEntities(mapData) {
-    const result = { player: null, civiles: [], saveZones: [] };
+    const result = { player: null, civiles: [], saveZones: [], breakables: [] };
     const layer = mapData.layers.find(l => l.type === 'objectgroup');
     if (!layer) return result;
 
@@ -44,6 +44,7 @@ class TiledMapLoader {
       const cx = obj.x + (obj.width || 0) / 2;
       const cy = obj.y + (obj.height || 0) / 2;
       const name = obj.name || '';
+      const type = obj.type || '';
       const w = obj.width || 0;
       const h = obj.height || 0;
 
@@ -53,6 +54,8 @@ class TiledMapLoader {
         result.civiles.push({ x: cx, y: cy });
       } else if (name === 'saveZone') {
         result.saveZones.push({ x: cx, y: cy, w: w, h: h });
+      } else if (name === 'breakable' || type === 'rompible' || obj['class'] === 'rompible') {
+        result.breakables.push({ x: cx, y: cy, w: w || 40, h: h || 40 });
       } else if (!name && Math.abs(w - 28) <= 2 && Math.abs(h - 24) <= 2) {
         result.saveZones.push({ x: cx, y: cy, w: w, h: h });
       }

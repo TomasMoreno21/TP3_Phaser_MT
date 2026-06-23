@@ -7,12 +7,15 @@ class LevelBase extends Phaser.Scene {
     this.cfg = config;
     gameState.npcsSaved = 0;
     gameState.oxygen = 100;
-    this.tiempoRestante = 15;
+    const civiles = Array.isArray(config.civiles) ? config.civiles : [];
+    this.cfg.npcsRequeridos = civiles.length;
+    this.tiempoRestante = Math.max(5, civiles.length * 5);
     this.temporizadorAgotado = false;
     this.cameras.main.setBackgroundColor(config.bgColor);
     this.matter.world.setBounds(0, 0, 800, 600);
 
     this._crearObstaculos();
+    this._crearBreakables();
     this._asegurarTexturas();
     this.jugador = new Bombero(this, config.playerX, config.playerY);
 
@@ -23,7 +26,7 @@ class LevelBase extends Phaser.Scene {
 
     if (config.enemigo) this._crearEnemigo(config.enemigo);
     if (config.fugasGas) this._crearFugasGas(config.fugasGas);
-
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this._iniciarSpawner();
 
     this._crearHUD();
@@ -36,6 +39,16 @@ class LevelBase extends Phaser.Scene {
     this.cfg.obstaculos.forEach(o => {
       const r = this.add.rectangle(o.x, o.y, o.w, o.h, o.color || 0x555555);
       this.matter.add.gameObject(r, { isStatic: true, label: 'obstacle' });
+    });
+  }
+
+  _crearBreakables() {
+    if (!this.cfg.breakables) return;
+    this.breakables = this.cfg.breakables.map(b => {
+      const r = this.add.rectangle(b.x, b.y, b.w, b.h, 0x8B4513);
+      this.matter.add.gameObject(r, { isStatic: true, label: 'breakable' });
+      r.setDepth(1);
+      return r;
     });
   }
 
@@ -109,9 +122,13 @@ class LevelBase extends Phaser.Scene {
     if (this.temporizadorAgotado) return;
     const candidatos = this.civiles.filter(c => c && !c.estaEnPeligro && !c.fueSalvado && c.body);
     if (candidatos.length === 0) return;
-    const objetivo = Phaser.Utils.Array.GetRandom(candidatos);
-    EscombroSpawner.lanzarEscombro(this, objetivo);
-    this.time.delayedCall(EscombroSpawner.WARNING_DURACION, () => this._encadenarEscombro());
+    const objetivo = candidatos.reduce((mejor, civil) => {
+      const d = Phaser.Math.Distance.Between(this.jugador.x, this.jugador.y, civil.x, civil.y);
+      return !mejor || d < mejor.d ? { civil, d } : mejor;
+    }, null).civil;
+    const warningDuration = this.cfg.escombroWarningDuration || EscombroSpawner.WARNING_DURACION;
+    EscombroSpawner.lanzarEscombro(this, objetivo, warningDuration);
+    this.time.delayedCall(warningDuration, () => this._encadenarEscombro());
   }
 
   _crearHUD() {
@@ -248,8 +265,31 @@ class LevelBase extends Phaser.Scene {
     }
 
     if (this.jugador) this.jugador.update();
+    if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) this._intentarRomper();
     if (this.enemigo) this.enemigo.update();
     if (this.fugas) this._chequearGas();
     this._actualizarHUD();
+  }
+
+  _intentarRomper() {
+    if (!this.breakables || this.breakables.length === 0 || !this.jugador) return;
+
+    const maxDist = 50;
+    let objetivo = null;
+    let mejorDist = Infinity;
+
+    this.breakables.forEach(b => {
+      if (!b.active) return;
+      const d = Phaser.Math.Distance.Between(this.jugador.x, this.jugador.y, b.x, b.y);
+      if (d < mejorDist) {
+        mejorDist = d;
+        objetivo = b;
+      }
+    });
+
+    if (objetivo && mejorDist <= maxDist) {
+      objetivo.destroy();
+      this.breakables = this.breakables.filter(b => b !== objetivo);
+    }
   }
 }

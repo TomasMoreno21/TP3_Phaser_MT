@@ -25,7 +25,8 @@ class Level1Scene extends LevelBase {
       playerY: ent.player.y,
       civiles: civilesConZona,
       obstaculos: [],
-      npcsRequeridos: 3,
+      breakables: ent.breakables,
+      npcsRequeridos: civilesConZona.length,
       siguienteNivel: 'Level2Scene'
     });
   }
