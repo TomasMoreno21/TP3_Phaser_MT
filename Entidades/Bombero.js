@@ -1,12 +1,9 @@
 class Bombero extends Phaser.Physics.Matter.Sprite {
   constructor(scene, x, y) {
-    super(scene.matter.world, x, y, null, null, {
-      chamfer: { radius: 6 },
-      label: 'bombero'
-    });
+    super(scene.matter.world, x, y, 'bomberoBody', null);
     scene.add.existing(this);
 
-    this.setRectangle(32, 48);
+    this.setRectangle(32, 48, { label: 'bombero' });
     this.setDisplaySize(32, 48);
     this.setOrigin(0.5);
     this.setFixedRotation();
