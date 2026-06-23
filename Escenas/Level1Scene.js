@@ -3,9 +3,36 @@ class Level1Scene extends LevelBase {
     super('Level1Scene');
   }
 
+  preload() {
+    this.load.json('nivel1', 'Assets/nivel1.json');
+  }
+
   create() {
+    if (this.cache.json.exists('nivel1')) {
+      this._crearDesdeMapa(this.cache.json.get('nivel1'));
+    } else {
+      this._crearPorDefecto();
+    }
+  }
+
+  _crearDesdeMapa(mapData) {
+    const ent = TiledMapLoader.cargar(this, mapData);
+    const civilesConZona = this._asignarZonas(ent.civiles, ent.saveZones);
+
     super.create({
-      bgColor: 0x1a1a2e,
+      bgColor: 0x0a0a2e,
+      playerX: ent.player.x,
+      playerY: ent.player.y,
+      civiles: civilesConZona,
+      obstaculos: [],
+      npcsRequeridos: 3,
+      siguienteNivel: 'Level2Scene'
+    });
+  }
+
+  _crearPorDefecto() {
+    super.create({
+      bgColor: 0x0a0a2e,
       playerX: 50,
       playerY: 550,
       obstaculos: [
@@ -18,9 +45,18 @@ class Level1Scene extends LevelBase {
         { x: 600, y: 300 },
         { x: 350, y: 130 },
       ],
-      spawnInterval: 6000,
       npcsRequeridos: 3,
       siguienteNivel: 'Level2Scene'
+    });
+  }
+
+  _asignarZonas(civiles, zonas) {
+    return civiles.map(c => {
+      const best = zonas.reduce((mejor, z) => {
+        const d = Phaser.Math.Distance.Between(c.x, c.y, z.x, z.y);
+        return d < mejor.d ? { zona: z, d } : mejor;
+      }, { zona: null, d: Infinity });
+      return { x: c.x, y: c.y, zona: best.zona };
     });
   }
 }

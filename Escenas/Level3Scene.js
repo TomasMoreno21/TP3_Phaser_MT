@@ -5,7 +5,7 @@ class Level3Scene extends LevelBase {
 
   create() {
     super.create({
-      bgColor: 0x3d1a1a,
+      bgColor: 0x0a0a2e,
       playerX: 50,
       playerY: 550,
       obstaculos: [
@@ -26,7 +26,7 @@ class Level3Scene extends LevelBase {
         { x: 400, y: 480, w: 60, h: 60 },
         { x: 400, y: 80, w: 60, h: 60 },
       ],
-      spawnInterval: 2500,
+
       npcsRequeridos: 4,
       siguienteNivel: 'VictoryScene'
     });

@@ -1,33 +1,27 @@
 class EscombroSpawner {
-  static lanzarEscombro(scene, objetivoX, objetivoY) {
-    const warningDuration = 2000;
-    const offsetX = Phaser.Math.Between(-60, 60);
-    const offsetY = Phaser.Math.Between(-60, 60);
-    const x = Phaser.Math.Clamp(objetivoX + offsetX, 30, 770);
-    const y = Phaser.Math.Clamp(objetivoY + offsetY, 30, 570);
+  static get WARNING_DURACION() { return 3000; }
 
-    const warning = scene.add.circle(x, y, 18, 0xff0000, 0.6);
-    warning.setDepth(10);
+  static lanzarEscombro(scene, civil) {
+    if (!civil || !civil.body || civil.fueSalvado) return;
 
-    const targetCivil = scene.civiles.find(c =>
-      c && !c.fueSalvado && c.body &&
-      Phaser.Math.Distance.Between(x, y, c.x, c.y) <= 60
-    );
-    if (targetCivil) targetCivil.estaEnPeligro = true;
+    const warningDuration = this.WARNING_DURACION;
 
+    civil.estaEnPeligro = true;
+    civil.setTint(0xff6666);
+
+    const warning = scene.add.circle(civil.x, civil.y, 20, 0xff0000, 0.5).setDepth(15);
     scene.tweens.add({
       targets: warning,
       alpha: 0.1,
-      ease: 'Sine.easeInOut',
-      duration: 300,
-      yoyo: true,
-      repeat: Math.floor(warningDuration / 300) - 1
+      duration: 350, yoyo: true,
+      repeat: Math.floor(warningDuration / 700) - 1,
     });
 
     scene.time.delayedCall(warningDuration, () => {
       warning.destroy();
-      if (targetCivil) targetCivil.estaEnPeligro = false;
-      EscombroSpawner._spawnEscombro(scene, x, y);
+      civil.estaEnPeligro = false;
+      civil.clearTint();
+      EscombroSpawner._spawnEscombro(scene, warning.x, warning.y);
     });
   }
 
@@ -42,12 +36,26 @@ class EscombroSpawner {
 
     const escombro = scene.add.sprite(x, y, 'escombroTexture');
     escombro.setDisplaySize(24, 24);
-    scene.matter.add.gameObject(escombro);
-    escombro.setRectangle(24, 24, { label: 'escombro', isSensor: true });
     escombro.setDepth(8);
 
-    scene.time.delayedCall(4000, () => {
-      if (escombro && escombro.active) escombro.destroy();
+    const visual = scene.add.sprite(x, -30, 'escombroTexture');
+    visual.setDisplaySize(24, 24);
+    visual.setDepth(9);
+
+    scene.tweens.add({
+      targets: visual,
+      y: y,
+      duration: 400,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        visual.destroy();
+        scene.matter.add.gameObject(escombro);
+        escombro.setRectangle(24, 24, { label: 'escombro', isSensor: true });
+
+        scene.time.delayedCall(4000, () => {
+          if (escombro && escombro.active) escombro.destroy();
+        });
+      }
     });
   }
 }

@@ -6,6 +6,7 @@ class Civil extends Phaser.Physics.Matter.Sprite {
     this.setRectangle(32, 64, { label: 'civil' });
     this.setDisplaySize(32, 64);
     this.setOrigin(0.5);
+    this.setDepth(2);
     this.setFriction(0.1);
     this.setBounce(0.05);
     this.setMass(2.5);

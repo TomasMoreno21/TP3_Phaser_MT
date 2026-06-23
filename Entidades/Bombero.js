@@ -3,10 +3,11 @@ class Bombero extends Phaser.Physics.Matter.Sprite {
     super(scene.matter.world, x, y, 'bomberoBody', null);
     scene.add.existing(this);
 
-    this.setRectangle(32, 48, { label: 'bombero' });
-    this.setDisplaySize(32, 48);
+    this.setRectangle(36, 52, { label: 'bombero' });
+    this.setDisplaySize(36, 52);
     this.setOrigin(0.5);
     this.setFixedRotation();
+    this.setDepth(2);
     this.setFriction(0.08);
     this.setFrictionAir(0.02);
     this.setMass(4);

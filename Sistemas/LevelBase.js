@@ -7,6 +7,8 @@ class LevelBase extends Phaser.Scene {
     this.cfg = config;
     gameState.npcsSaved = 0;
     gameState.oxygen = 100;
+    this.tiempoRestante = 15;
+    this.temporizadorAgotado = false;
     this.cameras.main.setBackgroundColor(config.bgColor);
     this.matter.world.setBounds(0, 0, 800, 600);
 
@@ -22,7 +24,7 @@ class LevelBase extends Phaser.Scene {
     if (config.enemigo) this._crearEnemigo(config.enemigo);
     if (config.fugasGas) this._crearFugasGas(config.fugasGas);
 
-    if (config.spawnInterval) this._iniciarSpawner(config.spawnInterval);
+    this._iniciarSpawner();
 
     this._crearHUD();
     this._configurarColisiones();
@@ -41,11 +43,16 @@ class LevelBase extends Phaser.Scene {
     if (this.textures.exists('bomberoBody')) return;
 
     const g = this.add.graphics();
-    g.fillStyle(0x0077ff, 1);
-    g.fillRect(0, 0, 32, 48);
-    g.generateTexture('bomberoBody', 32, 48);
+    g.fillStyle(0xCC0000, 1);
+    g.fillTriangle(18, 2, 8, 18, 28, 18);
+    g.fillStyle(0xE8B800, 1);
+    g.fillRect(8, 18, 20, 34);
+    g.fillStyle(0xFFFFFF, 1);
+    g.fillRect(12, 10, 3, 3);
+    g.fillRect(19, 10, 3, 3);
+    g.generateTexture('bomberoBody', 36, 52);
     g.clear();
-    g.fillStyle(0xcc3333, 1);
+    g.fillStyle(0x33cc33, 1);
     g.fillRect(0, 0, 32, 64);
     g.generateTexture('civilBody', 32, 64);
     g.clear();
@@ -56,14 +63,27 @@ class LevelBase extends Phaser.Scene {
   }
 
   _crearCiviles(positions) {
-    return positions.map(p => new Civil(this, p.x, p.y));
+    return positions.map(p => {
+      const civil = new Civil(this, p.x, p.y);
+      if (p.zona) civil._zonaConfig = p.zona;
+      return civil;
+    });
   }
 
   _crearZonasSalvacion() {
     this.civiles.forEach(civil => {
-      const zoneX = Phaser.Math.Clamp(civil.x + 40, 20, 780);
-      const zoneY = Phaser.Math.Clamp(civil.y, 20, 580);
-      const z = this.add.rectangle(zoneX, zoneY, 28, 24, 0x00ff00, 0.2)
+      let zoneX = Phaser.Math.Clamp(civil.x + 40, 20, 780);
+      let zoneY = Phaser.Math.Clamp(civil.y, 20, 580);
+      let zoneW = 28, zoneH = 24;
+
+      if (civil._zonaConfig) {
+        zoneX = civil._zonaConfig.x;
+        zoneY = civil._zonaConfig.y;
+        zoneW = civil._zonaConfig.w || 28;
+        zoneH = civil._zonaConfig.h || 24;
+      }
+
+      const z = this.add.rectangle(zoneX, zoneY, zoneW, zoneH, 0x00ff00, 0.2)
         .setStrokeStyle(1, 0x00ff00);
       this.matter.add.gameObject(z, { isStatic: true, isSensor: true, label: 'saveZone' });
       z.civil = civil;
@@ -81,17 +101,17 @@ class LevelBase extends Phaser.Scene {
     this.fugas = configs.map(g => new FugaGas(this, g.x, g.y, g.w, g.h));
   }
 
-  _iniciarSpawner(interval) {
-    this.time.addEvent({
-      delay: interval,
-      callback: () => {
-        const candidatos = this.civiles.filter(c => c && !c.estaEnPeligro && !c.fueSalvado && c.body);
-        if (candidatos.length === 0) return;
-        const objetivo = Phaser.Utils.Array.GetRandom(candidatos);
-        EscombroSpawner.lanzarEscombro(this, objetivo.x, objetivo.y);
-      },
-      loop: true
-    });
+  _iniciarSpawner() {
+    this.time.delayedCall(1000, () => this._encadenarEscombro());
+  }
+
+  _encadenarEscombro() {
+    if (this.temporizadorAgotado) return;
+    const candidatos = this.civiles.filter(c => c && !c.estaEnPeligro && !c.fueSalvado && c.body);
+    if (candidatos.length === 0) return;
+    const objetivo = Phaser.Utils.Array.GetRandom(candidatos);
+    EscombroSpawner.lanzarEscombro(this, objetivo);
+    this.time.delayedCall(EscombroSpawner.WARNING_DURACION, () => this._encadenarEscombro());
   }
 
   _crearHUD() {
@@ -153,7 +173,8 @@ class LevelBase extends Phaser.Scene {
   }
 
   _escombroGolpeCivil() {
-    gameState.addScore(-150);
+    this.temporizadorAgotado = true;
+    this.time.delayedCall(500, () => this.scene.start('GameOverScene'));
   }
 
   _enemigoGolpeaJugador() {
@@ -174,7 +195,8 @@ class LevelBase extends Phaser.Scene {
   }
 
   _actualizarHUD() {
-    let texto = `Puntos: ${gameState.score}  Vidas: ${gameState.lives}`;
+    const t = Math.max(0, Math.ceil(this.tiempoRestante));
+    let texto = `Tiempo: ${t}s  Puntos: ${gameState.score}  Vidas: ${gameState.lives}`;
     if (this.civiles) {
       texto += `  Rescatados: ${gameState.npcsSaved}/${this.cfg.npcsRequeridos || this.civiles.length}`;
     }
@@ -209,7 +231,22 @@ class LevelBase extends Phaser.Scene {
     }
   }
 
-  update() {
+  update(time, delta) {
+    if (this.temporizadorAgotado) return;
+
+    this.tiempoRestante -= delta / 1000;
+    if (this.tiempoRestante <= 0) {
+      this.tiempoRestante = 0;
+      this.temporizadorAgotado = true;
+      gameState.loseLife();
+      if (gameState.lives <= 0) {
+        this.time.delayedCall(500, () => this.scene.start('GameOverScene'));
+      } else {
+        this.scene.restart();
+      }
+      return;
+    }
+
     if (this.jugador) this.jugador.update();
     if (this.enemigo) this.enemigo.update();
     if (this.fugas) this._chequearGas();
