@@ -19,6 +19,7 @@ class Level3Scene extends LevelBase {
         { x: 160, y: 440 }, { x: 640, y: 450 },
         { x: 220, y: 320 }, { x: 600, y: 250 }
       ],
+      spawnInterval: 2500,
       npcsRequeridos: 3,
       siguienteNivel: 'VictoryScene'
     });

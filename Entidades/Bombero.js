@@ -13,7 +13,7 @@ class Bombero extends Phaser.Physics.Matter.Sprite {
     this.setMass(4);
 
     this.speed = 3.2;
-    this.jumpSpeed = -10;
+    this.jumpSpeed = -15;
 
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.wasd = {

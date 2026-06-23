@@ -17,6 +17,10 @@ class LevelBase extends Phaser.Scene {
       this._crearZonasSalvacion();
     }
 
+    if (config.spawnInterval) {
+      this._iniciarSpawnerEscombros(config.spawnInterval);
+    }
+
     this._crearHUD();
     this._configurarColisiones();
     this._actualizarHUD();
@@ -26,15 +30,18 @@ class LevelBase extends Phaser.Scene {
     this.platformData = this.cfg.plataformas.map(p => {
       const r = this.add.rectangle(p.x, p.y, p.w, p.h, p.color || 0x555555).setOrigin(0.5);
       this.matter.add.gameObject(r, { isStatic: true, label: p.label || 'platform' });
-      return { x: p.x, w: p.w, topY: p.y - p.h / 2 };
+      return { x: p.x, w: p.w, topY: p.y - p.h / 2, label: p.label || 'platform' };
     });
     this.platformData.unshift({
-      x: 0, w: 800, topY: 600
+      x: 0, w: 800, topY: 600, label: 'ground'
     });
   }
 
   _getFloorTopY(x) {
-    const match = this.platformData.filter(p => x >= p.x - p.w / 2 - 4 && x <= p.x + p.w / 2 + 4);
+    const match = this.platformData.filter(p =>
+      p.label !== 'wall' &&
+      x >= p.x - p.w / 2 - 4 && x <= p.x + p.w / 2 + 4
+    );
     if (match.length === 0) return 568;
     return Math.min(...match.map(p => p.topY));
   }
@@ -61,6 +68,7 @@ class LevelBase extends Phaser.Scene {
     this.civiles.forEach(civil => {
       const fy = this._getFloorTopY(civil.x);
       const plat = this.platformData.filter(p =>
+        p.label !== 'wall' &&
         civil.x >= p.x - p.w / 2 && civil.x <= p.x + p.w / 2
       )[0];
 
@@ -88,6 +96,19 @@ class LevelBase extends Phaser.Scene {
     }).setDepth(20);
   }
 
+  _iniciarSpawnerEscombros(interval) {
+    this.time.addEvent({
+      delay: interval,
+      callback: () => {
+        const candidatos = this.civiles.filter(c => c && !c.estaEnPeligro && !c.fueSalvado && c.body);
+        if (candidatos.length === 0) return;
+        const objetivo = Phaser.Utils.Array.GetRandom(candidatos);
+        EscombroSpawner.lanzarEscombro(this, objetivo.x, this.civiles);
+      },
+      loop: true
+    });
+  }
+
   _configurarColisiones() {
     this.matter.world.on('collisionstart', event => {
       event.pairs.forEach(pair => {
@@ -95,13 +116,41 @@ class LevelBase extends Phaser.Scene {
 
         if (labels.includes('bombero') && labels.includes('civil')) {
           this._empujarCivil(pair, labels);
-        }
-
-        if (labels.includes('civil') && labels.includes('saveZone')) {
+        } else if (labels.includes('civil') && labels.includes('saveZone')) {
           this._revisarZona(pair, labels);
+        } else if (labels.includes('escombro') && labels.includes('bombero')) {
+          this._escombroGolpeaBombero(pair, labels);
+        } else if (labels.includes('escombro') && labels.includes('civil')) {
+          this._escombroGolpeaCivil(pair, labels);
+        } else if (labels.includes('escombro') && (labels.includes('ground') || labels.includes('platform') || labels.includes('wall'))) {
+          this._escombroTocaSuelo(pair, labels);
         }
       });
     });
+  }
+
+  _escombroGolpeaBombero(pair, labels) {
+    const eb = pair.bodyA.label === 'escombro' ? pair.bodyA : pair.bodyB;
+    if (eb.velocity && eb.velocity.y > 2) {
+      gameState.loseLife();
+      if (gameState.lives <= 0) {
+        this.time.delayedCall(300, () => this.scene.start('GameOverScene'));
+      }
+    }
+  }
+
+  _escombroGolpeaCivil(pair, labels) {
+    const eb = pair.bodyA.label === 'escombro' ? pair.bodyA : pair.bodyB;
+    if (eb.velocity && eb.velocity.y > 2) {
+      gameState.addScore(-150);
+    }
+  }
+
+  _escombroTocaSuelo(pair, labels) {
+    const eb = pair.bodyA.label === 'escombro' ? pair.bodyA : pair.bodyB;
+    if (eb.gameObject && eb.gameObject.active) {
+      eb.gameObject.destroy();
+    }
   }
 
   _empujarCivil(pair, labels) {

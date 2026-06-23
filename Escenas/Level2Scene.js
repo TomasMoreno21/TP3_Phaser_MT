@@ -19,6 +19,7 @@ class Level2Scene extends LevelBase {
         { x: 180, y: 440 }, { x: 640, y: 430 },
         { x: 260, y: 330 }, { x: 620, y: 250 }
       ],
+      spawnInterval: 3500,
       npcsRequeridos: 3,
       siguienteNivel: 'Level3Scene'
     });
