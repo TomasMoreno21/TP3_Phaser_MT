@@ -11,13 +11,33 @@ class LevelBase extends Phaser.Scene {
     this.cfg.npcsRequeridos = civiles.length;
     this.tiempoRestante = Math.max(5, civiles.length * 5);
     this.temporizadorAgotado = false;
+    // soportar worlds más grandes; usar valores por defecto si no vienen en la config
+    this.worldWidth = config.worldWidth || 800;
+    this.worldHeight = config.worldHeight || 600;
     this.cameras.main.setBackgroundColor(config.bgColor);
-    this.matter.world.setBounds(0, 0, 800, 600);
+    this.matter.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
+    this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
     this._crearObstaculos();
     this._crearBreakables();
     this._asegurarTexturas();
     this.jugador = new Bombero(this, config.playerX, config.playerY);
+
+    // la cámara principal sigue al jugador con suavizado
+    this.cameras.main.startFollow(this.jugador, true, 0.12, 0.12);
+
+    // Debug: tecla D para alternar debug de Matter y volcar las paredes del world
+    const D = Phaser.Input.Keyboard.KeyCodes.D;
+    this.input.keyboard.addKey(D).on('down', () => {
+      console.log('Matter world walls:', this.matter.world.walls);
+      if (!this.matter.world.debugGraphic && this.matter.world.createDebugGraphic) {
+        try { this.matter.world.createDebugGraphic(); } catch (e) { /* ignore */ }
+      }
+      this.matter.world.drawDebug = !this.matter.world.drawDebug;
+    });
+
+    // imprimir paredes iniciales para diagnóstico
+    console.log('Initial world walls:', this.matter.world.walls);
 
     if (config.civiles) {
       this.civiles = this._crearCiviles(config.civiles);
@@ -85,8 +105,10 @@ class LevelBase extends Phaser.Scene {
 
   _crearZonasSalvacion() {
     this.civiles.forEach(civil => {
-      let zoneX = Phaser.Math.Clamp(civil.x + 40, 20, 780);
-      let zoneY = Phaser.Math.Clamp(civil.y, 20, 580);
+      const maxX = Math.max(20, this.worldWidth - 20);
+      const maxY = Math.max(20, this.worldHeight - 20);
+      let zoneX = Phaser.Math.Clamp(civil.x + 40, 20, maxX);
+      let zoneY = Phaser.Math.Clamp(civil.y, 20, maxY);
       let zoneW = 28, zoneH = 24;
 
       if (civil._zonaConfig) {
@@ -137,6 +159,8 @@ class LevelBase extends Phaser.Scene {
       backgroundColor: 'rgba(0,0,0,0.5)',
       padding: { x: 8, y: 4 }
     }).setDepth(20);
+    // no mover el HUD cuando la cámara se desplaza
+    this.uiText.setScrollFactor(0);
   }
 
   _configurarColisiones() {
@@ -237,14 +261,13 @@ class LevelBase extends Phaser.Scene {
     });
 
     if (enGas) {
-      gameState.oxygen -= 0.3;
+      const antes = Math.floor(gameState.oxygen);
+      gameState.oxygen -= 0.6;
+      const despues = Math.floor(gameState.oxygen);
+      gameState.score = Math.max(0, gameState.score - (antes - despues));
       if (gameState.oxygen <= 0) {
-        gameState.oxygen = 100;
-        gameState.loseLife();
-        if (gameState.lives <= 0) this.scene.start('GameOverScene');
+        this.scene.start('GameOverScene');
       }
-    } else {
-      gameState.oxygen = Math.min(100, gameState.oxygen + 0.1);
     }
   }
 

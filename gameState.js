@@ -14,7 +14,7 @@ const gameState = {
   },
 
   addScore(points) { this.score += points; },
-  loseLife() { this.lives--; },
+  loseLife() { this.lives--; this.score = Math.max(0, this.score - 100); },
   saveNPC() { this.npcsSaved++; },
 
   getStatus() {

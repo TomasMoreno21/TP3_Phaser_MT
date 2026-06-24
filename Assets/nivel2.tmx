@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="20" height="15" tilewidth="40" tileheight="40" infinite="0" nextlayerid="3" nextobjectid="16">
+ <tileset firstgid="1" source="tilesheet.tsx"/>
+ <layer id="1" name="objetos" width="20" height="15">
+  <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+</data>
+ </layer>
+ <objectgroup id="2" name="entidades">
+  <object id="1" name="civil" x="164" y="158.667" width="32" height="64"/>
+  <object id="2" name="civil" x="382.667" y="74.6667" width="32" height="64"/>
+  <object id="3" name="civil" x="623.333" y="219.333" width="32" height="64"/>
+  <object id="4" name="civil" x="600" y="406.667" width="32" height="64"/>
+  <object id="6" name="saveZone" x="130" y="112" width="28" height="24"/>
+  <object id="7" name="saveZone" x="705.333" y="240" width="28" height="24"/>
+  <object id="8" name="saveZone" x="692.667" y="428" width="28" height="24"/>
+  <object id="9" name="saveZone" x="88.6667" y="346.667" width="28" height="24"/>
+  <object id="10" name="saveZone" x="310" y="89.3333" width="28" height="24"/>
+  <object id="11" name="civil" x="88" y="396" width="32" height="64"/>
+  <object id="12" name="player" x="649.333" y="78.6667" width="32" height="48"/>
+  <object id="13" type="rompible" x="280.667" y="439.333" width="38" height="79.3333"/>
+  <object id="14" type="rompible" x="480.333" y="201.667" width="38" height="79.3333"/>
+  <object id="15" name="fugaGas" type="fugaGas&#10;" x="490.972" y="41.4906" width="91.0488" height="89.8963"/>
+ </objectgroup>
+</map>
