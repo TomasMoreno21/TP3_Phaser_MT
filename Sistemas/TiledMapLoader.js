@@ -36,7 +36,7 @@ class TiledMapLoader {
   }
 
   static _parseEntities(mapData) {
-    const result = { player: null, civiles: [], saveZones: [], breakables: [], fugasGas: [] };
+    const result = { player: null, civiles: [], saveZones: [], breakables: [], fugasGas: [], enemigo: null };
     let layer = mapData.layers.find(l => l.type === 'objectgroup' && l.name === 'entidades');
     if (!layer) {
       layer = mapData.layers.find(l => l.type === 'objectgroup');
@@ -62,6 +62,8 @@ class TiledMapLoader {
         result.breakables.push({ x: cx, y: cy, w: w, h: h });
       } else if (name === 'fugaGas' || type === 'fugaGas' || cls === 'fugaGas' || type === 'gasLeak' || cls === 'gasLeak') {
         result.fugasGas.push({ x: cx, y: cy, w: w, h: h });
+      } else if (name === 'enemigo' || type === 'enemigo' || cls === 'enemigo') {
+        result.enemigo = { x: cx, y: cy };
       } else if (!name && Math.abs(w - 28) <= 2 && Math.abs(h - 24) <= 2) {
         result.saveZones.push({ x: cx, y: cy, w: w, h: h });
       }

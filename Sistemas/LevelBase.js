@@ -313,6 +313,7 @@ class LevelBase extends Phaser.Scene {
     if (objetivo && mejorDist <= maxDist) {
       objetivo.destroy();
       this.breakables = this.breakables.filter(b => b !== objetivo);
+      gameState.addScore(50);
     }
   }
 }
