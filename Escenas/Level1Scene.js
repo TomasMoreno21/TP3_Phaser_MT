@@ -8,6 +8,7 @@ class Level1Scene extends LevelBase {
   }
 
   create() {
+    gameState.currentLevel = 1;
     if (this.cache.json.exists('nivel1')) {
       this._crearDesdeMapa(this.cache.json.get('nivel1'));
     } else {

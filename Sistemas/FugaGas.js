@@ -61,6 +61,28 @@ class FugaGas {
     });
   }
 
+  static chequearJugador(scene) {
+    if (!scene.fugas || !scene.jugador || !scene.jugador.body) return;
+    const enGas = scene.fugas.some(f => {
+      if (!f.zone || !f.zone.body) return false;
+      const b = f.zone.body.bounds;
+      const jb = scene.jugador.body.bounds;
+      return Phaser.Geom.Intersects.RectangleToRectangle(
+        new Phaser.Geom.Rectangle(b.min.x, b.min.y, b.max.x - b.min.x, b.max.y - b.min.y),
+        new Phaser.Geom.Rectangle(jb.min.x, jb.min.y, jb.max.x - jb.min.x, jb.max.y - jb.min.y)
+      );
+    });
+    if (enGas) {
+      const antes = Math.floor(gameState.oxygen);
+      gameState.oxygen -= 0.6;
+      const despues = Math.floor(gameState.oxygen);
+      gameState.score = Math.max(0, gameState.score - (antes - despues));
+      if (gameState.oxygen <= 0) {
+        scene.scene.start('GameOverScene');
+      }
+    }
+  }
+
   destroy() {
     if (this.spawnTimer) this.spawnTimer.remove(false);
     this.puffs.forEach(puff => puff.destroy());

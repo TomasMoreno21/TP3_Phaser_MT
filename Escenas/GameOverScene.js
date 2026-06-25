@@ -16,17 +16,17 @@ class GameOverScene extends Phaser.Scene {
       fontSize: '22px', fill: '#fff'
     }).setOrigin(0.5);
 
-    this.add.text(400, 320, `NPCs rescatados: ${status.npcsSaved}`, {
+    this.add.text(400, 320, `NPCs rescatados hasta ahora: ${status.npcsSaved}`, {
       fontSize: '18px', fill: '#ccc'
     }).setOrigin(0.5);
 
-    const btnReintentar = this.add.text(350, 420, 'REINTENTAR', {
+    const btnReintentar = this.add.text(400, 420, 'REINTENTAR', {
       fontSize: '22px', fill: '#fff',
       backgroundColor: '#882222',
       padding: { x: 20, y: 8 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    const btnMenu = this.add.text(350, 480, 'MENÚ PRINCIPAL', {
+    const btnMenu = this.add.text(400, 490, 'MENÚ PRINCIPAL', {
       fontSize: '22px', fill: '#fff',
       backgroundColor: '#444444',
       padding: { x: 20, y: 8 }

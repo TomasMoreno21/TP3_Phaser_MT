@@ -8,6 +8,7 @@ class Level2Scene extends LevelBase {
   }
 
   create() {
+    gameState.currentLevel = 2;
     const mapData = this._obtenerMapa();
     const ent = TiledMapLoader.cargar(this, mapData);
     const civilesConZona = this._asignarZonas(ent.civiles, ent.saveZones);

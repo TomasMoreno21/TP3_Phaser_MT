@@ -5,13 +5,12 @@ class LevelBase extends Phaser.Scene {
 
   create(config) {
     this.cfg = config;
-    gameState.npcsSaved = 0;
+    gameState.npcsSavedInLevel = 0;
     gameState.oxygen = 100;
     const civiles = Array.isArray(config.civiles) ? config.civiles : [];
     this.cfg.npcsRequeridos = civiles.length;
     this.tiempoRestante = Math.max(5, civiles.length * 5);
     this.temporizadorAgotado = false;
-    // soportar worlds más grandes; usar valores por defecto si no vienen en la config
     this.worldWidth = config.worldWidth || 800;
     this.worldHeight = config.worldHeight || 600;
     this.cameras.main.setBackgroundColor(config.bgColor);
@@ -20,37 +19,32 @@ class LevelBase extends Phaser.Scene {
 
     this._crearObstaculos();
     this._crearBreakables();
-    this._asegurarTexturas();
+    GeneradorTexturas.asegurar(this);
     this.jugador = new Bombero(this, config.playerX, config.playerY);
-
-    // la cámara principal sigue al jugador con suavizado
     this.cameras.main.startFollow(this.jugador, true, 0.12, 0.12);
 
-    // Debug: tecla D para alternar debug de Matter y volcar las paredes del world
-    const D = Phaser.Input.Keyboard.KeyCodes.D;
-    this.input.keyboard.addKey(D).on('down', () => {
-      console.log('Matter world walls:', this.matter.world.walls);
-      if (!this.matter.world.debugGraphic && this.matter.world.createDebugGraphic) {
-        try { this.matter.world.createDebugGraphic(); } catch (e) { /* ignore */ }
-      }
-      this.matter.world.drawDebug = !this.matter.world.drawDebug;
-    });
-
-    // imprimir paredes iniciales para diagnóstico
-    console.log('Initial world walls:', this.matter.world.walls);
-
     if (config.civiles) {
-      this.civiles = this._crearCiviles(config.civiles);
+      this.civiles = config.civiles.map(p => {
+        const civil = new Civil(this, p.x, p.y);
+        if (p.zona) civil._zonaConfig = p.zona;
+        return civil;
+      });
+      gameState.addNpcsFromLevel(this.civiles.length, gameState.currentLevel);
       this._crearZonasSalvacion();
     }
 
-    if (config.enemigo) this._crearEnemigo(config.enemigo);
-    if (config.fugasGas) this._crearFugasGas(config.fugasGas);
+    if (config.enemigo) {
+      this.enemigo = new EnemigoNPC(this, config.enemigo.x, config.enemigo.y, 'enemigoBody');
+      if (config.enemigo.speed) this.enemigo.speed = config.enemigo.speed;
+      if (config.enemigo.patrolRange) this.enemigo.patrolRange = config.enemigo.patrolRange;
+    }
+    if (config.fugasGas) this.fugas = config.fugasGas.map(g => new FugaGas(this, g.x, g.y, g.w, g.h));
+
     this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this._iniciarSpawner();
+    this.time.delayedCall(1000, () => this._encadenarEscombro());
 
     this._crearHUD();
-    this._configurarColisiones();
+    ManejadorColisiones.configurar(this);
     this._actualizarHUD();
   }
 
@@ -72,37 +66,6 @@ class LevelBase extends Phaser.Scene {
     });
   }
 
-  _asegurarTexturas() {
-    if (this.textures.exists('bomberoBody')) return;
-
-    const g = this.add.graphics();
-    g.fillStyle(0xCC0000, 1);
-    g.fillTriangle(18, 2, 8, 18, 28, 18);
-    g.fillStyle(0xE8B800, 1);
-    g.fillRect(8, 18, 20, 34);
-    g.fillStyle(0xFFFFFF, 1);
-    g.fillRect(12, 10, 3, 3);
-    g.fillRect(19, 10, 3, 3);
-    g.generateTexture('bomberoBody', 36, 52);
-    g.clear();
-    g.fillStyle(0x33cc33, 1);
-    g.fillRect(0, 0, 32, 64);
-    g.generateTexture('civilBody', 32, 64);
-    g.clear();
-    g.fillStyle(0x000000, 1);
-    g.fillRect(0, 0, 32, 48);
-    g.generateTexture('enemigoBody', 32, 48);
-    g.destroy();
-  }
-
-  _crearCiviles(positions) {
-    return positions.map(p => {
-      const civil = new Civil(this, p.x, p.y);
-      if (p.zona) civil._zonaConfig = p.zona;
-      return civil;
-    });
-  }
-
   _crearZonasSalvacion() {
     this.civiles.forEach(civil => {
       const maxX = Math.max(20, this.worldWidth - 20);
@@ -110,34 +73,18 @@ class LevelBase extends Phaser.Scene {
       let zoneX = Phaser.Math.Clamp(civil.x + 40, 20, maxX);
       let zoneY = Phaser.Math.Clamp(civil.y, 20, maxY);
       let zoneW = 28, zoneH = 24;
-
       if (civil._zonaConfig) {
         zoneX = civil._zonaConfig.x;
         zoneY = civil._zonaConfig.y;
         zoneW = civil._zonaConfig.w || 28;
         zoneH = civil._zonaConfig.h || 24;
       }
-
       const z = this.add.rectangle(zoneX, zoneY, zoneW, zoneH, 0x00ff00, 0.2)
         .setStrokeStyle(1, 0x00ff00);
       this.matter.add.gameObject(z, { isStatic: true, isSensor: true, label: 'saveZone' });
       z.civil = civil;
       civil.saveZone = z;
     });
-  }
-
-  _crearEnemigo(config) {
-    this.enemigo = new EnemigoNPC(this, config.x, config.y, 'enemigoBody');
-    if (config.speed) this.enemigo.speed = config.speed;
-    if (config.patrolRange) this.enemigo.patrolRange = config.patrolRange;
-  }
-
-  _crearFugasGas(configs) {
-    this.fugas = configs.map(g => new FugaGas(this, g.x, g.y, g.w, g.h));
-  }
-
-  _iniciarSpawner() {
-    this.time.delayedCall(1000, () => this._encadenarEscombro());
   }
 
   _encadenarEscombro() {
@@ -158,88 +105,14 @@ class LevelBase extends Phaser.Scene {
       fontSize: '15px', fill: '#fff',
       backgroundColor: 'rgba(0,0,0,0.5)',
       padding: { x: 8, y: 4 }
-    }).setDepth(20);
-    // no mover el HUD cuando la cámara se desplaza
-    this.uiText.setScrollFactor(0);
-  }
-
-  _configurarColisiones() {
-    this.matter.world.on('collisionstart', event => {
-      event.pairs.forEach(pair => {
-        const a = pair.bodyA;
-        const b = pair.bodyB;
-        const labels = [a.label, b.label];
-
-        if (labels.includes('bombero') && labels.includes('civil')) {
-          this._empujar(pair, labels);
-        } else if (labels.includes('civil') && labels.includes('saveZone')) {
-          this._salvar(pair, labels);
-        } else if (labels.includes('escombro')) {
-          if (labels.includes('bombero')) this._escombroGolpeJugador();
-          else if (labels.includes('civil')) this._escombroGolpeCivil();
-        } else if (labels.includes('bombero') && labels.includes('enemigo')) {
-          this._enemigoGolpeaJugador();
-        }
-      });
-    });
-  }
-
-  _empujar(pair, labels) {
-    const bb = pair.bodyA.label === 'bombero' ? pair.bodyA : pair.bodyB;
-    const cb = pair.bodyA.label === 'civil' ? pair.bodyA : pair.bodyB;
-    const speed = Math.abs(bb.velocity.x) + Math.abs(bb.velocity.y);
-    if (speed > 0.1 && cb.gameObject && cb.gameObject.serEmpujado) {
-      cb.gameObject.serEmpujado(gameState, this.jugador);
-    }
-  }
-
-  _salvar(pair, labels) {
-    const cb = pair.bodyA.label === 'civil' ? pair.bodyA : pair.bodyB;
-    const zb = pair.bodyA.label === 'saveZone' ? pair.bodyA : pair.bodyB;
-    const civil = cb.gameObject;
-    const zone = zb.gameObject;
-    if (civil && zone && zone.civil === civil && civil.fueEmpujado && !civil.fueSalvado) {
-      civil.fueSalvado = true;
-      gameState.saveNPC();
-      gameState.addScore(150);
-      this._verificarAvance();
-    }
-  }
-
-  _escombroGolpeJugador() {
-    gameState.loseLife();
-    if (gameState.lives <= 0) {
-      this.time.delayedCall(500, () => this.scene.start('GameOverScene'));
-    }
-  }
-
-  _escombroGolpeCivil() {
-    this.temporizadorAgotado = true;
-    this.time.delayedCall(500, () => this.scene.start('GameOverScene'));
-  }
-
-  _enemigoGolpeaJugador() {
-    if (this.enemigo && !this.enemigo.puedeGolpear()) return;
-    gameState.loseLife();
-    if (gameState.lives <= 0) {
-      this.time.delayedCall(500, () => this.scene.start('GameOverScene'));
-    }
-  }
-
-  _verificarAvance() {
-    const req = this.cfg.npcsRequeridos || this.civiles.length;
-    if (gameState.npcsSaved >= req) {
-      this.time.delayedCall(500, () => {
-        this.scene.start(this.cfg.siguienteNivel);
-      });
-    }
+    }).setDepth(20).setScrollFactor(0);
   }
 
   _actualizarHUD() {
     const t = Math.max(0, Math.ceil(this.tiempoRestante));
     let texto = `Tiempo: ${t}s  Puntos: ${gameState.score}  Vidas: ${gameState.lives}`;
     if (this.civiles) {
-      texto += `  Rescatados: ${gameState.npcsSaved}/${this.cfg.npcsRequeridos || this.civiles.length}`;
+      texto += `  Rescatados: ${gameState.npcsSavedInLevel}/${this.cfg.npcsRequeridos || this.civiles.length}`;
     }
     if (this.fugas) {
       texto += `  Oxígeno: ${Math.max(0, Math.round(gameState.oxygen))}%`;
@@ -247,33 +120,8 @@ class LevelBase extends Phaser.Scene {
     this.uiText.setText(texto);
   }
 
-  _chequearGas() {
-    if (!this.fugas || !this.jugador || !this.jugador.body) return;
-
-    const enGas = this.fugas.some(f => {
-      if (!f.zone || !f.zone.body) return false;
-      const b = f.zone.body.bounds;
-      const jb = this.jugador.body.bounds;
-      return Phaser.Geom.Intersects.RectangleToRectangle(
-        new Phaser.Geom.Rectangle(b.min.x, b.min.y, b.max.x - b.min.x, b.max.y - b.min.y),
-        new Phaser.Geom.Rectangle(jb.min.x, jb.min.y, jb.max.x - jb.min.x, jb.max.y - jb.min.y)
-      );
-    });
-
-    if (enGas) {
-      const antes = Math.floor(gameState.oxygen);
-      gameState.oxygen -= 0.6;
-      const despues = Math.floor(gameState.oxygen);
-      gameState.score = Math.max(0, gameState.score - (antes - despues));
-      if (gameState.oxygen <= 0) {
-        this.scene.start('GameOverScene');
-      }
-    }
-  }
-
   update(time, delta) {
     if (this.temporizadorAgotado) return;
-
     this.tiempoRestante -= delta / 1000;
     if (this.tiempoRestante <= 0) {
       this.tiempoRestante = 0;
@@ -286,34 +134,10 @@ class LevelBase extends Phaser.Scene {
       }
       return;
     }
-
     if (this.jugador) this.jugador.update();
-    if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) this._intentarRomper();
+    if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) ManejadorColisiones.intentarRomper(this);
     if (this.enemigo) this.enemigo.update();
-    if (this.fugas) this._chequearGas();
+    if (this.fugas) FugaGas.chequearJugador(this);
     this._actualizarHUD();
-  }
-
-  _intentarRomper() {
-    if (!this.breakables || this.breakables.length === 0 || !this.jugador) return;
-
-    const maxDist = 50;
-    let objetivo = null;
-    let mejorDist = Infinity;
-
-    this.breakables.forEach(b => {
-      if (!b.active) return;
-      const d = Phaser.Math.Distance.Between(this.jugador.x, this.jugador.y, b.x, b.y);
-      if (d < mejorDist) {
-        mejorDist = d;
-        objetivo = b;
-      }
-    });
-
-    if (objetivo && mejorDist <= maxDist) {
-      objetivo.destroy();
-      this.breakables = this.breakables.filter(b => b !== objetivo);
-      gameState.addScore(50);
-    }
   }
 }

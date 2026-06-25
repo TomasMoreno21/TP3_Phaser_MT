@@ -8,6 +8,7 @@ class Level3Scene extends LevelBase {
   }
 
   create() {
+    gameState.currentLevel = 3;
     const mapData = this.cache.json.exists('nivel3')
       ? this.cache.json.get('nivel3')
       : this._mapaDefecto();

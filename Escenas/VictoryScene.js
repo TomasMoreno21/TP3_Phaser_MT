@@ -16,7 +16,7 @@ class VictoryScene extends Phaser.Scene {
       fontSize: '22px', fill: '#fff'
     }).setOrigin(0.5);
 
-    this.add.text(400, 330, `NPCs rescatados: ${status.npcsSaved}`, {
+    this.add.text(400, 330, `NPCs rescatados: ${status.npcsSaved} / ${status.npcsTotal}`, {
       fontSize: '18px', fill: '#ccc'
     }).setOrigin(0.5);
 

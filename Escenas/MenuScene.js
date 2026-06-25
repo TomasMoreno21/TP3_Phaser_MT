@@ -32,8 +32,19 @@ class MenuScene extends Phaser.Scene {
       this.scene.start('Level1Scene');
     });
 
-    this.add.text(400, 560, 'Flechas / WASD: mover | Arriba/W: saltar', {
-      fontSize: '13px', fill: '#666'
-    }).setOrigin(0.5);
+    const tips = [
+      'WASD / FLECHAS para moverte',
+      'ESPACIO para romper obstáculos',
+      'Evitá al enemigo o perdés una vida',
+      'Zonas de gas bajan el oxígeno',
+    ];
+    const tipStyle = {
+      fontSize: '13px', fill: '#ffd700', align: 'center',
+      lineSpacing: 4, fontStyle: 'bold'
+    };
+    tips.forEach((t, i) => {
+      this.add.text(400, 520 + i * 20, `▸ ${t}`, tipStyle).setOrigin(0.5);
+    });
+
   }
 }
